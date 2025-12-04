@@ -52,15 +52,11 @@ public class ScheduleService {
     // Delete
     //return type for delete is string bcs were jst going to print a success delete message
     public String deleteSchedule(int scheduleId) {
-        String msg = "";
-
         if (srepo.findById(scheduleId).isPresent()) {
             srepo.deleteById(scheduleId);
-            msg = "Schedule " + scheduleId + " is successfully deleted";
+            return "Schedule " + scheduleId + " is successfully deleted";
         } else {
-            msg = "Schedule " + scheduleId + " does not exist";
+            return "Schedule " + scheduleId + " does not exist";
         }
-
-        return msg;
     }
 }
