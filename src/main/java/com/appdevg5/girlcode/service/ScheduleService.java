@@ -6,6 +6,7 @@ import java.util.NoSuchElementException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import com.appdevg5.girlcode.entity.ScheduleEntity;
+import com.appdevg5.girlcode.entity.UserEntity;
 import com.appdevg5.girlcode.repository.ScheduleRepository;
 
 @Service // contains the business logic of ur system
@@ -20,6 +21,12 @@ public class ScheduleService {
 
     // Create (C)
     public ScheduleEntity postScheduleRecord(ScheduleEntity schedule) {
+        // If user is not set, use default user (id=1)
+        if (schedule.getUser() == null) {
+            UserEntity defaultUser = new UserEntity();
+            defaultUser.setUserId(1L);
+            schedule.setUser(defaultUser);
+        }
         return srepo.save(schedule);
     }
 
@@ -28,27 +35,30 @@ public class ScheduleService {
         return srepo.findAll();
     }
 
-    public ScheduleEntity updateSchedule(int schedule_id, ScheduleEntity newScheduleDetails) {
-        ScheduleEntity schedule = srepo.findById(schedule_id)
-            .orElseThrow(() -> new NoSuchElementException("Schedule " + schedule_id + " does not exist!"));
+    public ScheduleEntity updateSchedule(int scheduleId, ScheduleEntity newScheduleDetails) {
+        ScheduleEntity schedule = srepo.findById(scheduleId)
+            .orElseThrow(() -> new NoSuchElementException("Schedule " + scheduleId + " does not exist!"));
         
         //update the record
-        schedule.setSchedule_name(newScheduleDetails.getSchedule_name());
-        schedule.setIs_saved(newScheduleDetails.getIs_saved());
+        schedule.setScheduleName(newScheduleDetails.getScheduleName());
+        schedule.setIsSaved(newScheduleDetails.getIsSaved());
+        schedule.setViewDays(newScheduleDetails.getViewDays());
+        schedule.setTimeRange(newScheduleDetails.getTimeRange());
+        schedule.setSubjects(newScheduleDetails.getSubjects());
         
         return srepo.save(schedule);
     }
 
     // Delete
     //return type for delete is string bcs were jst going to print a success delete message
-    public String deleteSchedule(int schedule_id) {
+    public String deleteSchedule(int scheduleId) {
         String msg = "";
 
-        if (srepo.findById(schedule_id) != null) {
-            srepo.deleteById(schedule_id);
-            msg = "Schedule " + schedule_id + " is successfully deleted";
+        if (srepo.findById(scheduleId).isPresent()) {
+            srepo.deleteById(scheduleId);
+            msg = "Schedule " + scheduleId + " is successfully deleted";
         } else {
-            msg = "Schedule " + schedule_id + " does not exist";
+            msg = "Schedule " + scheduleId + " does not exist";
         }
 
         return msg;

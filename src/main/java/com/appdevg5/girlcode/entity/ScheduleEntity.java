@@ -8,41 +8,45 @@ public class ScheduleEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private int schedule_id;
+    private int scheduleId;
 
     // Relationship: Many schedules belong to one user
     @ManyToOne
     @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity user; // Use an actual UserEntity reference instead of int user_id
+    private UserEntity user;
 
-    private String schedule_name;
+    private String scheduleName;
 
     // These are generated or derived later based on filters, not manually set by users
-    private String view_days;
-    private String time_range;
+    private String viewDays;
+    private String timeRange;
 
-    private boolean is_saved;
+    private boolean isSaved;
+
+    @Column(columnDefinition = "TEXT")
+    private String subjects; // JSON string of subject IDs
 
     public ScheduleEntity() {
         super();
     }
 
-    public ScheduleEntity(int schedule_id, UserEntity user, String schedule_name, String view_days, String time_range, boolean is_saved) {
+    public ScheduleEntity(int scheduleId, UserEntity user, String scheduleName, String viewDays, String timeRange, boolean isSaved, String subjects) {
         super();
-        this.schedule_id = schedule_id;
+        this.scheduleId = scheduleId;
         this.user = user;
-        this.schedule_name = schedule_name;
-        this.view_days = view_days;
-        this.time_range = time_range;
-        this.is_saved = is_saved;
+        this.scheduleName = scheduleName;
+        this.viewDays = viewDays;
+        this.timeRange = timeRange;
+        this.isSaved = isSaved;
+        this.subjects = subjects;
     }
 
-    public int getSchedule_id() {
-        return schedule_id;
+    public int getScheduleId() {
+        return scheduleId;
     }
 
-    public void setSchedule_id(int schedule_id) {
-        this.schedule_id = schedule_id;
+    public void setScheduleId(int scheduleId) {
+        this.scheduleId = scheduleId;
     }
 
     public UserEntity getUser() {
@@ -53,35 +57,43 @@ public class ScheduleEntity {
         this.user = user;
     }
 
-    public String getSchedule_name() {
-        return schedule_name;
+    public String getScheduleName() {
+        return scheduleName;
     }
 
-    public void setSchedule_name(String schedule_name) {
-        this.schedule_name = schedule_name;
+    public void setScheduleName(String scheduleName) {
+        this.scheduleName = scheduleName;
     }
 
-    public String getView_days() {
-        return view_days;
+    public String getViewDays() {
+        return viewDays;
     }
 
-    public void setView_days(String view_days) {
-        this.view_days = view_days;
+    public void setViewDays(String viewDays) {
+        this.viewDays = viewDays;
     }
 
-    public String getTime_range() {
-        return time_range;
+    public String getTimeRange() {
+        return timeRange;
     }
 
-    public void setTime_range(String time_range) {
-        this.time_range = time_range;
+    public void setTimeRange(String timeRange) {
+        this.timeRange = timeRange;
     }
 
-    public boolean getIs_saved() {
-        return is_saved;
+    public boolean getIsSaved() {
+        return isSaved;
     }
 
-    public void setIs_saved(boolean is_saved) {
-        this.is_saved = is_saved;
+    public void setIsSaved(boolean isSaved) {
+        this.isSaved = isSaved;
+    }
+
+    public String getSubjects() {
+        return subjects;
+    }
+
+    public void setSubjects(String subjects) {
+        this.subjects = subjects;
     }
 }

@@ -8,6 +8,7 @@ import com.appdevg5.girlcode.service.ScheduleService;
 
 @RestController
 @RequestMapping("/api/schedule")
+@CrossOrigin(origins = "*")
 public class ScheduleController {
 
     @Autowired
@@ -32,13 +33,13 @@ public class ScheduleController {
 
     //Update
     @PutMapping("/updateSchedule")
-    public ScheduleEntity updateSchedule(@RequestParam int schedule_id, @RequestBody ScheduleEntity newScheduleDetails) {
-        return sserv.updateSchedule(schedule_id, newScheduleDetails);
+    public ScheduleEntity updateSchedule(@RequestParam int scheduleId, @RequestBody ScheduleEntity newScheduleDetails) {
+        return sserv.updateSchedule(scheduleId, newScheduleDetails);
     }
 
     //Delete
-    @DeleteMapping("/deleteSchedule/{schedule_id}")
-    public String deleteSchedule(@PathVariable int schedule_id) {
-        return sserv.deleteSchedule(schedule_id);
+    @DeleteMapping("/deleteSchedule/{scheduleId}")
+    public String deleteSchedule(@PathVariable int scheduleId) {
+        return sserv.deleteSchedule(scheduleId);
     }
 }
