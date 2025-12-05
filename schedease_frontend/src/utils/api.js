@@ -8,7 +8,9 @@ function buildHeaders(token) {
 }
 
 export async function apiFetch(path, { method = "GET", body, token, params } = {}) {
+  console.log("apiFetch called with path:", path, "method:", method);
   let url = API_BASE + path;
+  console.log("Full URL:", url);
   if (params) url += `?${new URLSearchParams(params).toString()}`;
 
   const res = await fetch(url, {

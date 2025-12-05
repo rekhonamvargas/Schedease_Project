@@ -55,15 +55,11 @@ public class DataService {
 
     // D - DELETE
     public String deleteData(Long id) {
-        String msg = "";
-
         if (dataRepo.existsById(id)) {
             dataRepo.deleteById(id);
-            msg = "Data with ID " + id + " is successfully deleted!";
+            return "Data with ID " + id + " is successfully deleted!";
         } else {
-            msg = "Data with ID " + id + " does not exist!";
+            return "Data with ID " + id + " does not exist!";
         }
-
-        return msg;
     }
 }

@@ -1,12 +1,13 @@
 package com.appdevg5.girlcode.service;
 
-import com.appdevg5.girlcode.entity.UserEntity;
-import com.appdevg5.girlcode.repository.UserRepository;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-import java.util.Optional;
+import com.appdevg5.girlcode.entity.UserEntity;
+import com.appdevg5.girlcode.repository.UserRepository;
 
 @Service
 public class UserService {
@@ -38,5 +39,15 @@ public class UserService {
 
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
+    }
+
+    public UserEntity findByEmailAndPassword(String email, String password) {
+        List<UserEntity> users = userRepository.findAll();
+        for (UserEntity user : users) {
+            if (user.getEmail().equals(email) && user.getPassword().equals(password)) {
+                return user;
+            }
+        }
+        return null;
     }
 }

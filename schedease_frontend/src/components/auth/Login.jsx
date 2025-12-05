@@ -11,7 +11,8 @@ import {
   Stack,
 } from "@mui/material";
 import useForm from "../../hooks/useForm";
-import { loadUsers, setCurrentUserId } from "../../utils/storage";
+import { setCurrentUserId } from "../../utils/storage";
+import { apiFetch } from "../../utils/api";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ export default function Login() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError("");
 
@@ -60,22 +61,22 @@ export default function Login() {
     try {
       console.log("Login attempt:", { email: values.email, password: "[HIDDEN]" });
 
-      // Demo: validate against local users store
-      const users = loadUsers();
-      const user = users.find((u) => u.email === (values.email || ""));
-      if (!user || user.password !== values.password) {
-        setSubmitError("Invalid email or password");
-        return;
-      }
+      // Call API login
+      const user = await apiFetch("/users/login", {
+        method: "POST",
+        body: { email: values.email, password: values.password }
+      });
 
-      // Simulate saving auth token - replace with real API call
-      localStorage.setItem("token", "demo-token");
+      // Save token and user info
+      localStorage.setItem("token", "api-token"); // For now, just set a token
+      localStorage.setItem("user_id", user.userId || user.id);
       setCurrentUserId(user.username || user.email);
 
-      // Navigate to dashboard (not "/") to avoid redirect loop
+      // Navigate to dashboard
       navigate("/dashboard", { replace: true });
     } catch (err) {
-      setSubmitError("An error occurred while logging in. Please try again.");
+      console.error("Login error:", err);
+      setSubmitError(err.message || "Invalid email or password");
     }
   };
 

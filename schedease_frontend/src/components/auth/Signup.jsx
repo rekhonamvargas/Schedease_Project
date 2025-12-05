@@ -11,7 +11,8 @@ import {
   Stack,
 } from "@mui/material";
 import useForm from "../../hooks/useForm";
-import { loadUsers, saveUsers, setCurrentUserId } from "../../utils/storage";
+import { setCurrentUserId } from "../../utils/storage";
+import { apiFetch } from "../../utils/api";
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -72,7 +73,7 @@ export default function Signup() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError("");
 
@@ -86,31 +87,21 @@ export default function Signup() {
         password: "[HIDDEN]",
       });
 
-      // Local demo users store
-      const users = loadUsers();
-      // check duplicates
-      if (users.some((u) => u.username === values.username || u.email === values.email)) {
-        setSubmitError("Username or email already exists");
-        return;
-      }
-
       const newUser = {
         username: values.username,
         email: values.email,
-        password: values.password, // demo only - do NOT store plain passwords in production
-        full_name: values.full_name,
+        password: values.password,
+        fullName: values.full_name,
       };
-      users.push(newUser);
-      saveUsers(users);
 
-      // After signup, navigate to login so the user can sign in
+      // Call API to create user
+      await apiFetch("/users", { method: "POST", body: newUser });
+
+      // After signup, navigate to login
       navigate("/login", { replace: true });
-
-      // If you prefer to auto-login after signup, use:
-      // localStorage.setItem("token", "demo-token");
-      // navigate("/dashboard", { replace: true });
     } catch (err) {
-      setSubmitError("An error occurred while registering. Please try again.");
+      console.error("Signup error:", err);
+      setSubmitError(err.message || "An error occurred while registering. Please try again.");
     }
   };
 
