@@ -5,15 +5,20 @@ import java.util.NoSuchElementException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import com.appdevg5.girlcode.entity.ScheduleEntity;
 import com.appdevg5.girlcode.entity.UserEntity;
 import com.appdevg5.girlcode.repository.ScheduleRepository;
+import com.appdevg5.girlcode.repository.UserRepository;
 
 @Service // contains the business logic of ur system
 public class ScheduleService {
 
     @Autowired
     ScheduleRepository srepo;
+
+    @Autowired
+    UserRepository userRepository;
 
     public ScheduleService() {
         super();
@@ -23,8 +28,18 @@ public class ScheduleService {
     public ScheduleEntity postScheduleRecord(ScheduleEntity schedule) {
         // If user is not set, use default user (id=1)
         if (schedule.getUser() == null) {
-            UserEntity defaultUser = new UserEntity();
-            defaultUser.setUserId(1L);
+            // Fetch the default user from DB
+            UserEntity defaultUser = userRepository.findById(1L).orElse(null);
+            if (defaultUser == null) {
+                // Create default user if not exists
+                defaultUser = new UserEntity();
+                defaultUser.setUserId(1L);
+                defaultUser.setUsername("default");
+                defaultUser.setEmail("default@example.com");
+                defaultUser.setFullName("Default User");
+                defaultUser.setPassword("default");
+                defaultUser = userRepository.save(defaultUser);
+            }
             schedule.setUser(defaultUser);
         }
         return srepo.save(schedule);
