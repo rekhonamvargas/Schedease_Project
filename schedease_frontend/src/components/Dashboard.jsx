@@ -10,6 +10,8 @@ import useSubjects from "../hooks/useSubjects";
 import useSchedules from "../hooks/useSchedules";
 import useFilters from "../hooks/useFilters";
 import { userKey } from "../utils/storage";
+import { apiFetch } from "../utils/api";
+import { parseScheduleString } from "../utils/parse";
 import SetFilter from "./SetFilter";
 import "../App.css";
 
@@ -21,6 +23,7 @@ export default function Dashboard() {
     addMany: handleAddMany,
     save: handleSaveEdited,
     remove: handleDeleteData,
+    setSubjects,
   } = useSubjects([]);
 
   const {
@@ -104,6 +107,59 @@ export default function Dashboard() {
   // Track Schedule box height to match SubjectList
   const [scheduleHeight, setScheduleHeight] = useState(null);
 
+  // Helper function to check if two schedules conflict
+  const hasScheduleConflict = useCallback((schedule1, schedule2) => {
+    if (!schedule1 || !schedule2) return false;
+    
+    const parseSchedule = (scheduleStr) => {
+      const parts = scheduleStr.split(" / ").map(s => s.trim()).filter(Boolean);
+      const schedules = [];
+      
+      for (const part of parts) {
+        const parsed = parseScheduleString(part);
+        if (parsed) {
+          schedules.push(parsed);
+        }
+      }
+      return schedules;
+    };
+    
+    const convertTo24h = (time12) => {
+      const match = time12.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
+      if (!match) return null;
+      let [, h, m, period] = match;
+      h = parseInt(h, 10);
+      m = parseInt(m, 10);
+      if (period.toUpperCase() === "PM" && h !== 12) h += 12;
+      if (period.toUpperCase() === "AM" && h === 12) h = 0;
+      return h * 60 + m; // Return minutes from midnight
+    };
+    
+    const schedules1 = parseSchedule(schedule1);
+    const schedules2 = parseSchedule(schedule2);
+    
+    for (const s1 of schedules1) {
+      for (const s2 of schedules2) {
+        // Check if same day
+        if (s1.day === s2.day) {
+          const s1Start = convertTo24h(s1.start);
+          const s1End = convertTo24h(s1.end);
+          const s2Start = convertTo24h(s2.start);
+          const s2End = convertTo24h(s2.end);
+          
+          if (s1Start !== null && s1End !== null && s2Start !== null && s2End !== null) {
+            // Check for overlap: s1 starts before s2 ends AND s2 starts before s1 ends
+            if (s1Start < s2End && s2Start < s1End) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    
+    return false;
+  }, []);
+
   const handleSubjectAdd = useCallback((item, isAdded) => {
     const id = String(item.data_id ?? `${item.subject_code}-${item.section || ""}`);
     const itemSubjectCode = (item.subject_code || "").trim().toUpperCase();
@@ -126,13 +182,26 @@ export default function Dashboard() {
           return prev; // Don't modify the set
         }
         
+        // Check for schedule conflicts
+        const conflictingSubject = dataList.find((subject) => {
+          const subjectId = String(subject.data_id ?? `${subject.subject_code}-${subject.section || ""}`);
+          return prev.has(subjectId) && subjectId !== id && hasScheduleConflict(item.schedule, subject.schedule);
+        });
+        
+        if (conflictingSubject) {
+          setSnackMsg(`Schedule conflict: ${itemSubjectCode} conflicts with ${conflictingSubject.subject_code} (${conflictingSubject.section || ""})`);
+          setSnackSeverity("error");
+          setSnackOpen(true);
+          return prev; // Don't modify the set
+        }
+        
         next.add(id);
       } else {
         next.delete(id);
       }
       return next;
     });
-  }, [dataList]);
+  }, [dataList, hasScheduleConflict]);
 
   const [snackOpen, setSnackOpen] = useState(false);
   const [snackMsg, setSnackMsg] = useState("");
@@ -155,26 +224,42 @@ export default function Dashboard() {
     [filterSubjects, handleAddMany]
   );
 
-  const handleClearAll = useCallback(() => {
+  const handleClearAll = useCallback(async () => {
     if (!Array.isArray(dataList) || dataList.length === 0) {
       setSnackMsg("No subjects to delete");
       setSnackSeverity("info");
       setSnackOpen(true);
       return;
     }
-    for (const d of dataList) {
-      const id = d.data_id ?? null;
-      if (id != null) {
-        handleDeleteData(id);
-        removeSubjectFromSchedules(id);
+    
+    try {
+      const userId = localStorage.getItem("user_id");
+      if (!userId) {
+        setSnackMsg("User not logged in");
+        setSnackSeverity("error");
+        setSnackOpen(true);
+        return;
       }
+
+      // Call backend to clear all user data
+      const response = await apiFetch(`/data/clear?userId=${userId}`, {
+        method: "DELETE",
+      });
+      
+      // Clear local state only - saved schedules are NOT affected
+      setSubjects([]);
+      setAddedSubjectIds(new Set());
+      
+      setSnackMsg(response?.message || `Deleted ${dataList.length} subject(s)`);
+      setSnackSeverity("success");
+      setSnackOpen(true);
+    } catch (error) {
+      console.error("Failed to clear subjects:", error);
+      setSnackMsg(error.message || "Failed to clear subjects");
+      setSnackSeverity("error");
+      setSnackOpen(true);
     }
-    // Clear added subjects
-    setAddedSubjectIds(new Set());
-    setSnackMsg(`Deleted ${dataList.length} subject(s)`);
-    setSnackSeverity("success");
-    setSnackOpen(true);
-  }, [dataList, handleDeleteData, removeSubjectFromSchedules]);
+  }, [dataList, setSubjects]);
 
   return (
     <Box className="App" sx={{ minHeight: "100vh", bgcolor: "#fff6db" }}>
@@ -482,26 +567,42 @@ export default function App() {
     [filterSubjects, handleAddMany]
   );
 
-  const handleClearAll = useCallback(() => {
+  const handleClearAll = useCallback(async () => {
     if (!Array.isArray(dataList) || dataList.length === 0) {
       setSnackMsg("No subjects to delete");
       setSnackSeverity("info");
       setSnackOpen(true);
       return;
     }
-    dataList.forEach((d) => {
-      const id = d.data_id ?? null;
-      if (id != null) {
-        handleDeleteData(id);
-        removeSubjectFromSchedules(id);
+    
+    try {
+      const userId = localStorage.getItem("user_id");
+      if (!userId) {
+        setSnackMsg("User not logged in");
+        setSnackSeverity("error");
+        setSnackOpen(true);
+        return;
       }
-    });
-    // Clear added subjects
-    setAddedSubjectIds(new Set());
-    setSnackMsg(`Deleted ${dataList.length} subject(s)`);
-    setSnackSeverity("success");
-    setSnackOpen(true);
-  }, [dataList, handleDeleteData, removeSubjectFromSchedules]);
+
+      // Call backend to clear all user data
+      const response = await apiFetch(`/data/clear?userId=${userId}`, {
+        method: "DELETE",
+      });
+      
+      // Clear local state only - saved schedules are NOT affected
+      setSubjects([]);
+      setAddedSubjectIds(new Set());
+      
+      setSnackMsg(response?.message || `Deleted ${dataList.length} subject(s)`);
+      setSnackSeverity("success");
+      setSnackOpen(true);
+    } catch (error) {
+      console.error("Failed to clear subjects:", error);
+      setSnackMsg(error.message || "Failed to clear subjects");
+      setSnackSeverity("error");
+      setSnackOpen(true);
+    }
+  }, [dataList, setSubjects]);
 
   return (
     <Box className="App" sx={{ minHeight: "100vh", bgcolor: "#f5f5f5" }}>

@@ -50,6 +50,11 @@ public class ScheduleService {
         return srepo.findAll();
     }
 
+    // Read by user ID
+    public List<ScheduleEntity> getSchedulesByUserId(Long userId) {
+        return srepo.findByUser_UserId(userId);
+    }
+
     public ScheduleEntity updateSchedule(int scheduleId, ScheduleEntity newScheduleDetails) {
         ScheduleEntity schedule = srepo.findById(scheduleId)
             .orElseThrow(() -> new NoSuchElementException("Schedule " + scheduleId + " does not exist!"));
@@ -57,8 +62,6 @@ public class ScheduleService {
         //update the record
         schedule.setScheduleName(newScheduleDetails.getScheduleName());
         schedule.setIsSaved(newScheduleDetails.getIsSaved());
-        schedule.setViewDays(newScheduleDetails.getViewDays());
-        schedule.setTimeRange(newScheduleDetails.getTimeRange());
         schedule.setSubjects(newScheduleDetails.getSubjects());
         
         return srepo.save(schedule);

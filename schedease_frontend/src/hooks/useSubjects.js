@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
 import { nextId } from "../utils/ids";
-import { userKey } from "../utils/storage";
 import { apiFetch } from "../utils/api";
 
 const SUBJECTS_STORAGE_BASE = "schedease_subjects";
@@ -8,7 +7,12 @@ const SUBJECTS_STORAGE_BASE = "schedease_subjects";
 // Load subjects from API
 async function loadSubjectsFromAPI() {
   try {
-    const data = await apiFetch("/data");
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
+      console.warn("No user_id found, cannot load subjects");
+      return [];
+    }
+    const data = await apiFetch(`/data?userId=${userId}`);
     // Map backend fields to frontend fields
     return (data || []).map(item => ({
       ...item,
@@ -28,6 +32,10 @@ async function loadSubjectsFromAPI() {
 // Save subject to API (create or update)
 async function saveSubjectToAPI(subject) {
   try {
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
+      throw new Error("No user_id found, cannot save subject");
+    }
     // Map frontend fields to backend fields
     const backendSubject = {
       dataId: subject.data_id || subject.dataId,
@@ -43,6 +51,7 @@ async function saveSubjectToAPI(subject) {
       enrolled: subject.enrolled,
       assessed: subject.assessed,
       isClosed: subject.is_closed ? "true" : "false",
+      user: { userId: Number.parseInt(userId, 10) },
     };
 
     let created;
@@ -97,6 +106,10 @@ export default function useSubjects(initial = []) {
   const addMany = useCallback(async (parsedArray = []) => {
     try {
       const newSubjects = [];
+      const userId = localStorage.getItem("user_id");
+      if (!userId) {
+        throw new Error("No user_id found, cannot add subjects");
+      }
       for (const p of parsedArray) {
         // Map to backend format
         const backendSubject = {
@@ -112,6 +125,7 @@ export default function useSubjects(initial = []) {
           enrolled: p.enrolled,
           assessed: p.assessed,
           isClosed: p.is_closed ? "true" : "false",
+          user: { userId: Number.parseInt(userId, 10) },
         };
         const created = await apiFetch("/data", { method: "POST", body: backendSubject });
         // Map back

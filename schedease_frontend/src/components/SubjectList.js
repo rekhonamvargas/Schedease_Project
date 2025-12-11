@@ -147,7 +147,15 @@ export default function SubjectList({
           color="error"
           size="small"
           startIcon={<ClearIcon />}
-          onClick={() => onClear?.()}
+          onClick={async () => {
+            try {
+              await onClear?.();
+            } catch (error) {
+              console.error("Error clearing list:", error);
+              // Optionally, you can show an alert or snackbar here
+              alert("Failed to clear list. Please try again.");
+            }
+          }}
           disabled={deleteDisabled}
           sx={{ textTransform: "none", fontWeight: 600 }}
         >

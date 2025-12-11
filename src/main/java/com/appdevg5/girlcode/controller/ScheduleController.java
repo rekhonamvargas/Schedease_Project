@@ -27,7 +27,10 @@ public class ScheduleController {
 
     // Read (R)
     @GetMapping("/getAllSchedules")
-    public List<ScheduleEntity> getAllSchedules() {
+    public List<ScheduleEntity> getAllSchedules(@RequestParam(required = false) Long userId) {
+        if (userId != null) {
+            return sserv.getSchedulesByUserId(userId);
+        }
         return sserv.getAllSchedules();
     }
 

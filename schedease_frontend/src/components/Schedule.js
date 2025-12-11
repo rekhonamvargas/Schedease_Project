@@ -237,16 +237,16 @@ export default function Schedule({
   // Parse schedules for all added subjects and create a grid map
   const scheduleGrid = useMemo(() => {
     const grid = new Map(); // Key: "day-index_time24", Value: subject info
-    
+
     addedSubjects.forEach((subject) => {
       if (!subject.schedule) return;
-      
+
       const parsedSchedules = parseSubjectSchedule(subject.schedule);
-      
+
       parsedSchedules.forEach((parsed) => {
         const dayIndex = DAY_MAP[parsed.day]?.index;
         if (dayIndex === undefined) return;
-        
+
         // Find all time slots that fall within this schedule
         timeSlots.forEach((slot, slotIndex) => {
           if (isTimeInRange(slot.time24, parsed.start, parsed.end)) {
@@ -263,7 +263,7 @@ export default function Schedule({
         });
       });
     });
-    
+
     return grid;
   }, [addedSubjects, timeSlots]);
 
@@ -558,7 +558,7 @@ export default function Schedule({
           overflow: "auto",
         }}
       >
-        <TableContainer sx={{ maxHeight: "100%", overflow: "auto" }}>
+        <TableContainer sx={{ maxHeight: "100%", overflow: "auto", backgroundColor: "transparent" }}>
           <Table
             stickyHeader
             size="small"
@@ -567,6 +567,7 @@ export default function Schedule({
               tableLayout: "fixed",
               borderCollapse: "separate",
               borderSpacing: 0,
+              backgroundColor: "transparent",
               "& .MuiTableCell-root": {
                 borderRight: "1px solid #e0e0e0",
                 borderBottom: "1px solid #e0e0e0",
@@ -734,7 +735,8 @@ export default function Schedule({
                       
                       // Check if this is the start slot for a subject
                       if (cellData && cellData.startSlot === rowIndex) {
-                        const { subject, parsed, rowSpan } = cellData;
+                        const { subject, parsed } = cellData;
+                        const rowSpan = calculateRowSpan(parsed.start, parsed.end);
                         return (
                           <TableCell
                             key={dayIndex}
@@ -829,7 +831,7 @@ export default function Schedule({
                         );
                       }
                       
-                      // Empty cell - always render with border
+                      // Empty cell
                       return (
                         <TableCell
                           key={dayIndex}
@@ -838,7 +840,7 @@ export default function Schedule({
                             borderBottom: "1px solid #e0e0e0",
                             minHeight: 40,
                             width: "calc((100% - 70px) / 7)",
-                            backgroundColor: "#ffffff",
+                            padding: 0,
                           }}
                         />
                       );

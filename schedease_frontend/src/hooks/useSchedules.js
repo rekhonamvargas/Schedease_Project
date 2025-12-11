@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
 import { nextId } from "../utils/ids";
-import { userKey } from "../utils/storage";
 import { apiFetch } from "../utils/api";
 
 const SCHEDULES_STORAGE_BASE = "schedease_schedules";
@@ -8,7 +7,12 @@ const SCHEDULES_STORAGE_BASE = "schedease_schedules";
 // Load schedules from API
 async function loadSchedulesFromAPI() {
   try {
-    const data = await apiFetch("/schedule/getAllSchedules");
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
+      console.warn("No user_id found, cannot load schedules");
+      return [];
+    }
+    const data = await apiFetch(`/schedule/getAllSchedules?userId=${userId}`);
     // Map backend fields to frontend fields
     return (data || []).map(item => ({
       ...item,
@@ -26,20 +30,25 @@ async function loadSchedulesFromAPI() {
 // Save schedule to API (create or update)
 async function saveScheduleToAPI(schedule) {
   try {
+    const userId = localStorage.getItem("user_id");
+    if (!userId) {
+      throw new Error("No user_id found, cannot save schedule");
+    }
     // Map frontend fields to backend fields
     const backendSchedule = {
       scheduleName: schedule.schedule_name || schedule.scheduleName,
       subjects: JSON.stringify(schedule.subjects || []),
-      isSaved: schedule.is_saved !== undefined ? schedule.is_saved : true,
+      isSaved: schedule.is_saved === undefined ? true : schedule.is_saved,
+      user: { userId: Number.parseInt(userId, 10) },
     };
 
     let created;
     // Check if schedule_id is a number (existing) or string (new)
-    const isExisting = typeof schedule.schedule_id === 'number' || (typeof schedule.schedule_id === 'string' && !isNaN(parseInt(schedule.schedule_id)));
+    const isExisting = typeof schedule.schedule_id === 'number' || (typeof schedule.schedule_id === 'string' && !Number.isNaN(Number.parseInt(schedule.schedule_id, 10)));
 
-    if (isExisting && parseInt(schedule.schedule_id) > 0) {
+    if (isExisting && Number.parseInt(schedule.schedule_id, 10) > 0) {
       // Update existing
-      backendSchedule.scheduleId = parseInt(schedule.schedule_id);
+      backendSchedule.scheduleId = Number.parseInt(schedule.schedule_id, 10);
       created = await apiFetch(`/schedule/updateSchedule?scheduleId=${backendSchedule.scheduleId}`, { method: "PUT", body: backendSchedule });
     } else {
       // Create new
@@ -63,7 +72,7 @@ async function saveScheduleToAPI(schedule) {
 async function deleteScheduleFromAPI(id) {
   try {
     // Ensure id is numeric
-    const numericId = parseInt(id);
+    const numericId = Number.parseInt(id, 10);
     await apiFetch(`/schedule/deleteSchedule/${numericId}`, { method: "DELETE" });
   } catch (error) {
     console.error("Failed to delete schedule from API:", error);

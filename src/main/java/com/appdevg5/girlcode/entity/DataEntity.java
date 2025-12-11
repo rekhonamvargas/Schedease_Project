@@ -5,6 +5,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -14,6 +16,10 @@ public class DataEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long dataId;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id", nullable = false)
+    private UserEntity user;
 
     @Column(name = "number_column")
     private Integer number; 
@@ -57,6 +63,14 @@ public class DataEntity {
 
     public void setDataId(Long dataId) {
         this.dataId = dataId;
+    }
+
+    public UserEntity getUser() {
+        return user;
+    }
+
+    public void setUser(UserEntity user) {
+        this.user = user;
     }
 
     public Integer getNumber() {
